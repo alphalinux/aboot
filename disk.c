@@ -251,10 +251,9 @@ read_initrd()
 	free_mem_ptr = initrd_start;
 #endif
 
-	nblocks = initrd_size / bfs->blocksize;
+	nblocks = (initrd_size + bfs->blocksize - 1) / bfs->blocksize;
 	printf("aboot: loading initrd (%ld bytes/%d blocks) at %#lx\n",
 		initrd_size, nblocks, initrd_start);
-	if (nblocks & (bfs->blocksize - 1)) nblocks++;
 	nread = (*bfs->bread)(fd, 0, nblocks, (char*) initrd_start);
 	if (nread != nblocks * bfs->blocksize) {
 		printf("aboot: read returned %d instead of %d (%d*%d) bytes\n",
