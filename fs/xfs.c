@@ -1820,7 +1820,7 @@ xfs_read (void *buf, long len)
 static int
 xfs_bread(int fd, long blkno, long nblks, char *buffer)
 {
-       long offset, nbytes;
+       long offset, nbytes, n;
 
        if (fd != 1) {
                printf("XFS error: bad file descriptor!\n");
@@ -1833,7 +1833,7 @@ xfs_bread(int fd, long blkno, long nblks, char *buffer)
 
        nbytes = nblks * xfs.bsize;
        if (offset + nbytes > filemax)
-               nbytes = filemax - offset;      /* short read at EOF */
+               nbytes = filemax - offset;      /* stop at EOF */
 
        /*
         * aboot asks for whole blocks, so the tail of the last one is not
@@ -1843,7 +1843,12 @@ xfs_bread(int fd, long blkno, long nblks, char *buffer)
        memset(buffer, 0, nblks * xfs.bsize);
 
        filepos = offset;
-       return xfs_read(buffer, nbytes);
+       n = xfs_read(buffer, nbytes);
+       if (n != nbytes)
+               return n;
+
+       /* Return whole blocks at EOF, as ext2 and iso do */
+       return (n + xfs.bsize - 1) / xfs.bsize * xfs.bsize;
 }
 
 /*
