@@ -543,6 +543,8 @@ get_aboot_options (long dev)
 	printf("kernel_args=\"%s\"\n",kernel_args);
 #endif
 
+	initrd_file[0] = 0;
+
 	/* Forms of -flags argument from SRM */
 	if (kernel_args[0] >= '1' && kernel_args[0] <= '9'
 	    && kernel_args[1] == ':' && kernel_args[2]
@@ -782,6 +784,8 @@ load (long dev)
 	printf("load(%lx)\n", dev);
 #endif
 	fname = boot_file;
+	initrd_start = 0;
+	initrd_size = 0;
 	if (fname[0] == '-' && fname[1] == '\0') {
 		/* a single "-" implies raw boot: */
 		if (load_raw(dev) < 0) {
