@@ -40,6 +40,7 @@ jmp_buf		jump_buffer;
 unsigned long	start_addr = START_ADDR; /* default only */
 struct segment* chunks;
 int             nchunks;
+static int	chunks_alloc;		/* entries chunks already has */
 
 char		boot_file[256] = "";
 char		initrd_file[256] = "";
@@ -75,6 +76,10 @@ is_loadable_elf(const unsigned char *buf, long blocksize)
 
 	elf  = (Elf64_Ehdr *) buf;
 
+	/* may be left over from a failed attempt */
+	bss_start = 0;
+	bss_size = 0;
+
 	if (elf->e_ident[0] != 0x7f
 	    || elf->e_ident[1] != 'E'
 	    || elf->e_ident[2] != 'L'
@@ -106,7 +111,11 @@ is_loadable_elf(const unsigned char *buf, long blocksize)
 	}
 
 	phdrs = (Elf64_Phdr *) (buf + elf->e_phoff);
-	chunks = malloc(sizeof(struct segment) * elf->e_phnum);
+	/* free() does nothing, so reuse the table of an earlier attempt */
+	if (elf->e_phnum > chunks_alloc) {
+		chunks = malloc(sizeof(struct segment) * elf->e_phnum);
+		chunks_alloc = elf->e_phnum;
+	}
 	start_addr = phdrs[0].p_vaddr; /* assume they are sorted */
 	entry_addr = elf->e_entry;
 

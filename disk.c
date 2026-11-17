@@ -230,6 +230,9 @@ read_initrd()
 {
 	int nblocks, nread, fd;
 	struct stat buf;
+#ifndef TESTING
+	unsigned long prev_free;
+#endif
 
 	fd = (*bfs->open)(initrd_file);
 	if (fd < 0) {
@@ -245,6 +248,7 @@ read_initrd()
 	/* put it as high up in memory as possible */
 	if (!free_mem_ptr)
 		free_mem_ptr = memory_end();
+	prev_free = free_mem_ptr;
 	/* page aligned (downward) */
 	initrd_start = (free_mem_ptr - initrd_size) & ~(PAGE_SIZE-1);
 	/* update free_mem_ptr so malloc() still works */
@@ -259,6 +263,11 @@ read_initrd()
 		printf("aboot: read returned %d instead of %d (%d*%d) bytes\n",
 			nread, nblocks * bfs->blocksize,
 			nblocks, bfs->blocksize);
+#ifndef TESTING
+		/* give it back, unless the read allocated below it */
+		if (free_mem_ptr == initrd_start)
+			free_mem_ptr = prev_free;
+#endif
 		return -1;
 	}
 	return 0;
@@ -543,6 +552,8 @@ get_aboot_options (long dev)
 	printf("kernel_args=\"%s\"\n",kernel_args);
 #endif
 
+	initrd_file[0] = 0;
+
 	/* Forms of -flags argument from SRM */
 	if (kernel_args[0] >= '1' && kernel_args[0] <= '9'
 	    && kernel_args[1] == ':' && kernel_args[2]
@@ -782,6 +793,8 @@ load (long dev)
 	printf("load(%lx)\n", dev);
 #endif
 	fname = boot_file;
+	initrd_start = 0;
+	initrd_size = 0;
 	if (fname[0] == '-' && fname[1] == '\0') {
 		/* a single "-" implies raw boot: */
 		if (load_raw(dev) < 0) {
