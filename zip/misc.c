@@ -334,8 +334,10 @@ uncompress_kernel(int fd)
 {
 	input_fd = fd;
 
-	inbuf = malloc(INBUFSIZ);
-	window = malloc(WSIZE);
+	if (!inbuf)
+		inbuf = malloc(INBUFSIZ);
+	if (!window)
+		window = malloc(WSIZE);
 
 	clear_bufs();
 
